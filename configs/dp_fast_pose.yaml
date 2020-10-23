@@ -1,0 +1,28 @@
+model_name: fast_pose_dp
+data:
+  train_ann_path: /home/huffman/data/annotations/person_keypoints_train2017.json
+  #  train_ann_path: /home/huffman/data/annotations/person_keypoints_val2017.json
+  val_ann_path: /home/huffman/data/annotations/person_keypoints_val2017.json
+  train_img_root: /home/huffman/data/train2017
+  #  train_img_root: /home/huffman/data/val2017
+  val_img_root: /home/huffman/data/val2017
+  batch_size: 128
+  num_workers: 4
+  debug: False
+
+model:
+  num_joints: 17
+  backbone: resnet50
+  reduction: False
+
+optim:
+  lr: 0.001
+  milestones: [170,200]
+  epochs: 270
+  sync_bn: True
+  gamma: 0.1
+val:
+  interval: 1
+  weight_path: weights
+
+gpus: [4,5,6,7]
