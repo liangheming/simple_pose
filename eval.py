@@ -11,8 +11,8 @@ from torch.utils.data import DataLoader
 
 @torch.no_grad()
 def predicts_trans():
-    vdata = MSCOCO(img_root="/home/huffman/data/val2017",
-                   ann_path="/home/huffman/data/annotations/person_keypoints_val2017.json",
+    vdata = MSCOCO(img_root="data/val2017",
+                   ann_path="data/annotations/person_keypoints_val2017.json",
                    debug=False,
                    augment=False,
                    )
@@ -22,19 +22,19 @@ def predicts_trans():
                          collate_fn=vdata.collate_fn,
                          shuffle=False
                          )
-    model: torch.nn.Module = getattr(pose_resnet_duc, "resnet50")(
+    model: torch.nn.Module = getattr(pose_resnet_dconv, "resnet50")(
         pretrained=False,
         num_classes=17,
     )
-    weights = torch.load("weights/fast_pose_dp_best.pth", map_location="cpu")['ema']
+    weights = torch.load("weights/without_reduction/fast_pose_dp_dconv_best.pth", map_location="cpu")['ema']
     weights_info = model.load_state_dict(weights, strict=False)
     print(weights_info)
     device = torch.device("cuda:8")
     model.to(device).eval()
     pbar = tqdm(vloader)
     kps_dict_list = list()
-    decoder = GaussTaylorKeyPointDecoder()
-    # decoder = BasicKeyPointDecoder()
+    # decoder = GaussTaylorKeyPointDecoder()
+    decoder = BasicKeyPointDecoder()
     for i, (input_tensors, heat_maps, masks, trans_invs, img_ids) in enumerate(pbar):
         input_img = input_tensors.to(device)
         tran_inv = trans_invs.to(device)
@@ -49,7 +49,7 @@ def predicts_trans():
 def eval_kps():
     from pycocotools.coco import COCO
     from pycocotools.cocoeval import COCOeval
-    gt_ann_path = "/home/huffman/data/annotations/person_keypoints_val2017.json"
+    gt_ann_path = "data/annotations/person_keypoints_val2017.json"
     pd_ann_path = "test_gt_kpt.json"
     coco_gt = COCO(gt_ann_path)
     coco_pd = coco_gt.loadRes(pd_ann_path)
@@ -67,13 +67,3 @@ def eval_kps():
 if __name__ == '__main__':
     predicts_trans()
     eval_kps()
-# Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.702
-# Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.913
-# Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.780
-# Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.675
-# Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.744
-# Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.739
-# Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.927
-# Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.809
-# Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.706
-# Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.790
