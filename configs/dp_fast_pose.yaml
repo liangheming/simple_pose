@@ -7,19 +7,21 @@ data:
   #  train_img_root: /home/huffman/data/val2017
   val_img_root: /home/huffman/data/val2017
   batch_size: 128
-  num_workers: 4
+  num_workers: 8
   debug: False
 
 model:
+  type: pose_resnet_duc
+  name: resnet50
   num_joints: 17
-  backbone: resnet50
-  reduction: False
+  pretrained: True
+  reduction: True
 
 optim:
   lr: 0.001
-  milestones: [170,200]
-  epochs: 270
-  sync_bn: True
+  amp: False
+  milestones: [120,160]
+  epochs: 180
   gamma: 0.1
 val:
   interval: 1

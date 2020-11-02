@@ -88,3 +88,26 @@ def reduce_sum(tensor):
     tensor = tensor.clone()
     dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
     return tensor
+
+
+class AverageLogger(object):
+    def __init__(self):
+        self.data = 0.
+        self.count = 0.
+
+    def update(self, data, count=None):
+        self.data += data
+        if count is not None:
+            self.count += count
+        else:
+            self.count += 1
+
+    def avg(self):
+        return self.data / self.count
+
+    def sum(self):
+        return self.data
+
+    def reset(self):
+        self.data = 0.
+        self.count = 0.

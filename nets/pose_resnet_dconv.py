@@ -1,7 +1,11 @@
 import torch
-from nets.common import SELayer
 import torch.nn as nn
-from torchvision.models.utils import load_state_dict_from_url
+from nets.commons import SELayer
+
+try:
+    from torch.hub import load_state_dict_from_url
+except ImportError:
+    from torch.utils.model_zoo import load_url as load_state_dict_from_url
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
            'resnet152', 'resnext50_32x4d', 'resnext101_32x8d',
@@ -52,7 +56,7 @@ class BasicBlock(nn.Module):
         self.downsample = downsample
         self.stride = stride
         if reduction:
-            self.se = SELayer(planes * self.expansion)
+            self.se = SELayer(planes)
         self.reduc = reduction
 
     def forward(self, x):
@@ -66,6 +70,7 @@ class BasicBlock(nn.Module):
         out = self.bn2(out)
         if self.reduc:
             out = self.se(out)
+
         if self.downsample is not None:
             identity = self.downsample(x)
 
@@ -98,11 +103,11 @@ class Bottleneck(nn.Module):
         self.conv3 = conv1x1(width, planes * self.expansion)
         self.bn3 = norm_layer(planes * self.expansion)
         self.relu = nn.ReLU(inplace=True)
+        self.downsample = downsample
+        self.stride = stride
         if reduction:
             self.se = SELayer(planes * 4)
         self.reduc = reduction
-        self.downsample = downsample
-        self.stride = stride
 
     def forward(self, x):
         identity = x
@@ -130,7 +135,7 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, block, layers, zero_init_residual=False,
+    def __init__(self, block, layers, num_classes=1000, zero_init_residual=False,
                  groups=1, width_per_group=64, replace_stride_with_dilation=None,
                  norm_layer=None, reduction=False):
         super(ResNet, self).__init__()
@@ -140,7 +145,6 @@ class ResNet(nn.Module):
 
         self.inplanes = 64
         self.dilation = 1
-        self.reduction = reduction
         if replace_stride_with_dilation is None:
             # each element in the tuple indicates if we should replace
             # the 2x2 stride with a dilated convolution instead
@@ -149,6 +153,7 @@ class ResNet(nn.Module):
             raise ValueError("replace_stride_with_dilation should be None "
                              "or a 3-element tuple, got {}".format(replace_stride_with_dilation))
         self.groups = groups
+        self.reduction = reduction
         self.base_width = width_per_group
         self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3,
                                bias=False)
@@ -162,14 +167,26 @@ class ResNet(nn.Module):
                                        dilate=replace_stride_with_dilation[1])
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2,
                                        dilate=replace_stride_with_dilation[2])
-        self.inner_channels = (128 * block.expansion, 256 * block.expansion, 512 * block.expansion)
+
+        self.deconv_layers = self._make_deconv_layer()
+
+        self.final_layer = nn.Conv2d(
+            in_channels=self.inplanes,
+            out_channels=num_classes,
+            kernel_size=1,
+            padding=0
+        )
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.normal_(m.weight, std=0.001)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
             elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.ConvTranspose2d):
+                nn.init.normal_(m.weight, std=0.001)
 
         # Zero-initialize the last BN in each residual branch,
         # so that the residual branch starts with zeros, and each residual block behaves like an identity.
@@ -195,27 +212,55 @@ class ResNet(nn.Module):
             )
 
         layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample, self.groups,
-                            self.base_width, previous_dilation, norm_layer, reduction=self.reduction))
+        if downsample is not None:
+            layers.append(block(self.inplanes, planes, stride, downsample, self.groups,
+                                self.base_width, previous_dilation, norm_layer,
+                                reduction=self.reduction))
+        else:
+            layers.append(block(self.inplanes, planes, stride, downsample, self.groups,
+                                self.base_width, previous_dilation, norm_layer))
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
             layers.append(block(self.inplanes, planes, groups=self.groups,
                                 base_width=self.base_width, dilation=self.dilation,
-                                norm_layer=norm_layer, reduction=self.reduction))
+                                norm_layer=norm_layer))
 
+        return nn.Sequential(*layers)
+
+    def _make_deconv_layer(self):
+        kernel_size, padding, output_padding = 4, 1, 0
+        planes = 256
+        layers = list()
+        for _ in range(3):
+            layers.append(
+                nn.ConvTranspose2d(
+                    in_channels=self.inplanes,
+                    out_channels=planes,
+                    kernel_size=kernel_size,
+                    stride=2,
+                    padding=padding,
+                    output_padding=output_padding,
+                    bias=False
+                )
+            )
+            layers.append(nn.BatchNorm2d(planes))
+            layers.append(nn.ReLU(inplace=True))
+            self.inplanes = planes
         return nn.Sequential(*layers)
 
     def _forward_impl(self, x):
         # See note [TorchScript super()]
         x = self.conv1(x)
         x = self.bn1(x)
-        x = self.relu(x)  # 1/2
-        x = self.maxpool(x)  # 1/4
+        x = self.relu(x)
+        x = self.maxpool(x)
 
         x = self.layer1(x)
-        x = self.layer2(x)  # 1/8
-        x = self.layer3(x)  # 1/16
-        x = self.layer4(x)  # 1/32
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        x = self.deconv_layers(x)
+        x = self.final_layer(x)
 
         return x
 
@@ -228,8 +273,9 @@ def _resnet(arch, block, layers, pretrained, progress, **kwargs):
     if pretrained:
         state_dict = load_state_dict_from_url(model_urls[arch],
                                               progress=progress)
-        load_ret = model.load_state_dict(state_dict, strict=False)
-        print(load_ret)
+        load_info = model.load_state_dict(state_dict, strict=False)
+        print("missing_keys: ", load_info.missing_keys)
+        print("unexpected_keys: ", load_info.unexpected_keys)
     return model
 
 
@@ -355,3 +401,10 @@ def wide_resnet101_2(pretrained=False, progress=True, **kwargs):
     kwargs['width_per_group'] = 64 * 2
     return _resnet('wide_resnet101_2', Bottleneck, [3, 4, 23, 3],
                    pretrained, progress, **kwargs)
+
+
+if __name__ == '__main__':
+    input_tensor = torch.rand(size=(1, 3, 256, 192))
+    net = resnet18(pretrained=True, num_classes=17, reduction=True)
+    out = net(input_tensor)
+    print(out.shape)
