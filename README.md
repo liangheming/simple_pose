@@ -16,7 +16,8 @@ torchvision >=0.6.0
 ```
 ## result
 该项目以192x256的图片(包含人体的图片patch)作为输入,使用了4块显卡进行训练,batch_size=128(32/卡,显存17892MB,约17GB).总epoch=180,
-初始学习率为0.001,使用了Adam作为优化器.学习率在第120个epoch与第160个epoch进行衰减,衰减系数0.1,训练时长约为21h(小时)
+初始学习率为0.001,使用了Adam作为优化器.学习率在第120个epoch与第160个epoch进行衰减,衰减系数0.1,训练时长约为21h(小时).测试所使用的heat_map到
+keypoints的decode为具体解码器为 GaussTaylorKeyPointDecoder
 
 ### DConv(上采样使用转置卷积)的performance(val2017 使用GT BOX)
 ```shell script
@@ -43,6 +44,20 @@ torchvision >=0.6.0
  Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.823
  Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.724
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.813
+```
+### SELayer+DUC(上采样Conv+PixelShuffle)的performance(val2017 使用GT BOX)
+***模型初始化时的reduction为True***
+```shell script
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.735
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.923
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.811
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.707
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.777
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.768
+ Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.932
+ Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.831
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.734
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.818
 ```
 
 

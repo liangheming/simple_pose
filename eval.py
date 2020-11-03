@@ -22,11 +22,12 @@ def predicts_trans():
                          collate_fn=vdata.collate_fn,
                          shuffle=False
                          )
-    model: torch.nn.Module = getattr(pose_resnet_dconv, "resnet50")(
+    model: torch.nn.Module = getattr(pose_resnet_duc, "resnet50")(
         pretrained=False,
         num_classes=17,
+        reduction=True,
     )
-    weights = torch.load("weights/without_reduction/fast_pose_dp_dconv_best.pth", map_location="cpu")['ema']
+    weights = torch.load("weights/with_reduction/pose_resnet_duc_best.pth", map_location="cpu")['ema']
     weights_info = model.load_state_dict(weights, strict=False)
     print(weights_info)
     device = torch.device("cuda:8")
