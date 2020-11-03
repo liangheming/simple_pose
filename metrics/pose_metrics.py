@@ -1,6 +1,7 @@
 import torch
 import sys
 import cv2 as cv
+import numpy as np
 import torch.nn.functional as F
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
@@ -70,7 +71,7 @@ class GaussTaylorKeyPointDecoder(BasicKeyPointDecoder):
         ori_max, _ = heat_map.view(b, c, -1).max(dim=-1)
         blur_max, _ = heat_map_blur.view(b, c, -1).max(dim=-1)
         heat_map_blur = (heat_map_blur * ori_max[..., None, None] / blur_max[..., None, None]).clamp(min=1e-10).log()
-
+        # 3. calc offsets
         b_idx, c_idx = torch.meshgrid(torch.arange(b), torch.arange(c))
         x_idx, y_idx = coords[..., 0].long(), coords[..., 1].long()
         b_idx, c_idx, x_idx, y_idx = b_idx.reshape(-1), c_idx.reshape(-1), x_idx.reshape(-1), y_idx.reshape(-1)
@@ -91,13 +92,12 @@ class GaussTaylorKeyPointDecoder(BasicKeyPointDecoder):
                       2 * heat_map_blur[v_b_idx, v_c_idx, v_y_idx, v_x_idx] +
                       heat_map_blur[v_b_idx, v_c_idx, v_y_idx - 2, v_x_idx])
         derivative_valid_mask = dxx * dyy - dxy ** 2 != 0
-        dxx_dxy = torch.stack([dxx, dyy], dim=-1)
+        dxx_dxy = torch.stack([dxx, dxy], dim=-1)
         dxy_dyy = torch.stack([dxy, dyy], dim=-1)
         v_hessian = torch.stack([dxx_dxy, dxy_dyy], dim=-2)[derivative_valid_mask]
         v_derivative = torch.stack([dx, dy], dim=-1).unsqueeze(-1)[derivative_valid_mask]
         v_hessian_inv = v_hessian.inverse()
         offsets = (-v_hessian_inv @ v_derivative).transpose(1, 2).squeeze(1)
-
         coords = coords.view(-1, 2)
         valid_mask[valid_mask] = derivative_valid_mask
         coords[valid_mask] = (coords[valid_mask] + offsets).clamp(min=0.)
@@ -105,6 +105,68 @@ class GaussTaylorKeyPointDecoder(BasicKeyPointDecoder):
         xyz = torch.cat([coords, torch.ones_like(coords[..., [0]])], dim=-1)
         trans_output = torch.einsum("bcd,bad->bca", xyz, trans_inv)
         return trans_output, max_val
+
+
+class DarkPoseOriginalKeyPointDecoder(BasicKeyPointDecoder):
+    def __init__(self, kernel_size=11):
+        self.kernel_size = kernel_size
+
+    @staticmethod
+    def taylor(hm, coord):
+        heatmap_height = hm.shape[0]
+        heatmap_width = hm.shape[1]
+        px = int(coord[0])
+        py = int(coord[1])
+        if 1 < px < heatmap_width - 2 and 1 < py < heatmap_height - 2:
+            dx = 0.5 * (hm[py][px + 1] - hm[py][px - 1])
+            dy = 0.5 * (hm[py + 1][px] - hm[py - 1][px])
+            dxx = 0.25 * (hm[py][px + 2] - 2 * hm[py][px] + hm[py][px - 2])
+            dxy = 0.25 * (hm[py + 1][px + 1] - hm[py - 1][px + 1] - hm[py + 1][px - 1] \
+                          + hm[py - 1][px - 1])
+            dyy = 0.25 * (hm[py + 2 * 1][px] - 2 * hm[py][px] + hm[py - 2 * 1][px])
+            derivative = np.matrix([[dx], [dy]])
+            hessian = np.matrix([[dxx, dxy], [dxy, dyy]])
+            if dxx * dyy - dxy ** 2 != 0:
+                hessianinv = hessian.I
+                offset = -hessianinv * derivative
+                offset = np.squeeze(np.array(offset.T), axis=0)
+                coord += offset
+        return coord
+
+    @staticmethod
+    def gaussian_blur(hm, kernel):
+        border = (kernel - 1) // 2
+        batch_size = hm.shape[0]
+        num_joints = hm.shape[1]
+        height = hm.shape[2]
+        width = hm.shape[3]
+        for i in range(batch_size):
+            for j in range(num_joints):
+                origin_max = np.max(hm[i, j])
+                dr = np.zeros((height + 2 * border, width + 2 * border))
+                dr[border: -border, border: -border] = hm[i, j].copy()
+                dr = cv.GaussianBlur(dr, (kernel, kernel), 0)
+                hm[i, j] = dr[border: -border, border: -border].copy()
+                hm[i, j] *= origin_max / np.max(hm[i, j])
+        return hm
+
+    def __call__(self, heat_map, trans_inv):
+        """
+        :param heat_map:
+        :param trans_inv:
+        :return:
+        """
+        coords, max_val = self.heat_map_to_axis(heat_map)
+        coords = coords.detach().cpu().numpy()
+        hm = self.gaussian_blur(heat_map.detach().cpu().numpy(), self.kernel_size)
+        hm = np.maximum(hm, 1e-10)
+        hm = np.log(hm)
+        for n in range(coords.shape[0]):
+            for p in range(coords.shape[1]):
+                coords[n, p] = self.taylor(hm[n][p], coords[n][p])
+        xyz = np.concatenate([coords, np.ones_like(coords[..., [0]])], axis=-1)
+        trans_output = np.einsum("bcd,bad->bca", xyz, trans_inv.cpu().numpy())
+        return torch.from_numpy(trans_output), max_val.detach().cpu()
 
 
 def kps_to_dict_(predicts, scores, img_ids, set_in_list):

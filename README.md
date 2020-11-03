@@ -1,7 +1,7 @@
 # SimplePose
 该项目主要包含一系列Top-Down的2D姿态估计算法,如[AlphaPose](https://github.com/MVIG-SJTU/AlphaPose) 中的DUC,[Simple Baselines](https://arxiv.org/abs/1804.06208) 中DCONV,
 以及[HRNet-Human-Pose-Estimation](https://github.com/HRNet/HRNet-Human-Pose-Estimation) HRNet.同时也包含了[DarkPose](https://github.com/ilovepose/DarkPose) 所提到的KeyPoints Encoder与Decoder的
-一些小的tricks.
+一些小的tricks(大约获得1.0左右的mAP增益).
 
 
 ## requirement
@@ -20,29 +20,29 @@ torchvision >=0.6.0
 
 ### DConv(上采样使用转置卷积)的performance(val2017 使用GT BOX)
 ```shell script
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.707
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.714
  Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.913
- Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.788
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.679
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.749
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.743
- Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.925
- Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.811
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.710
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.793
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.790
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.689
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.760
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.751
+ Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.927
+ Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.814
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.718
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.802
 ```
 ### DUC(上采样Conv+PixelShuffle)的performance(val2017 使用GT BOX)
 ```shell script
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.719
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.726
  Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.924
- Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.790
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.689
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.762
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.752
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.801
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.699
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.772
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.760
  Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.930
- Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.816
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.717
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.805
+ Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.823
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.724
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.813
 ```
 
 
