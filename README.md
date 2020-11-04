@@ -19,45 +19,48 @@ torchvision >=0.6.0
 初始学习率为0.001,使用了Adam作为优化器.学习率在第120个epoch与第160个epoch进行衰减,衰减系数0.1,训练时长约为21h(小时).测试所使用的heat_map到
 keypoints的decode为具体解码器为 GaussTaylorKeyPointDecoder
 
-### DConv(上采样使用转置卷积)的performance(val2017 使用GT BOX)
+**以下结果均使用[COCO_val2017_detections_AP_H_56_person.json](https://drive.google.com/drive/folders/1fRUDNUDxe9fjqcRZ2bnF_TKMlO0nB_dk?usp=sharing) 的检测结果作为测试,数据来自
+[HRNet-Human-Pose-Estimation](https://github.com/HRNet/HRNet-Human-Pose-Estimation)**
+
+### DConv(上采样使用转置卷积)的performance
 ```shell script
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.714
- Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.913
- Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.790
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.689
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.760
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.751
- Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.927
- Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.814
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.718
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.802
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.714
+Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.913
+Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.789
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.688
+Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.760
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.752
+Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.928
+Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.815
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.719
+Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.802
 ```
-### DUC(上采样Conv+PixelShuffle)的performance(val2017 使用GT BOX)
+### DUC(上采样Conv+PixelShuffle)的performance)
 ```shell script
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.726
- Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.924
- Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.801
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.699
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.772
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.760
- Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.930
- Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.823
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.724
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.813
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.726
+Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.923
+Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.801
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.698
+Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.772
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.760
+Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.930
+Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.823
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.724
+Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.813
 ```
-### SELayer+DUC(上采样Conv+PixelShuffle)的performance(val2017 使用GT BOX)
-***模型初始化时的reduction为True***
+### SELayer+DUC(上采样Conv+PixelShuffle)的performance
+**模型初始化时的reduction为True**
 ```shell script
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.735
- Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.923
- Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.811
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.707
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.777
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.768
- Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.932
- Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.831
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.734
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.818
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.734
+Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.923
+Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.810
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.706
+Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.777
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.768
+Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.932
+Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.831
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.734
+Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.818
 ```
 
 
@@ -120,5 +123,6 @@ nohup python main.py >>train.log 2>&1 &
 - [x] Mixed Precision Training (supported by apex)
 - [x] SELayer
 - [x] Sync Batch Normalize
+- [x] Person Detector support(by YOLOv5)
 - [ ] Test With Person Detector(YOLOv3...)
 - [ ] custom data train\test scripts
