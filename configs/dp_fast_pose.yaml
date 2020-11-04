@@ -11,7 +11,7 @@ data:
   debug: False
 
 model:
-  type: pose_resnet_duc
+  type: pose_resnet_dconv
   name: resnet50
   num_joints: 17
   pretrained: True

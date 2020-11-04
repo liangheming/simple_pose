@@ -147,3 +147,16 @@ class MSCOCO(Dataset):
         trans_invs = torch.stack(trans_invs).float()
         return input_tensors, heat_maps, masks, trans_invs, img_ids
 
+# if __name__ == '__main__':
+#     datasets = MSCOCO(img_root="/home/huffman/data/val2017",
+#                       ann_path="/home/huffman/data/annotations/person_keypoints_val2017.json",
+#                       debug=100, augment=True)
+#     from torch.utils.data.dataloader import DataLoader
+#
+#     loader = DataLoader(dataset=datasets, batch_size=4, shuffle=True, collate_fn=datasets.collate_fn)
+#     for input_tensors, heat_maps, masks, trans_invs, img_ids in loader:
+#         # print(masks[0])
+#         pass
+# print("#" * 50)
+# for input_tensors, heat_maps, masks, trans_invs, img_ids in loader:
+#     print(masks[0])
