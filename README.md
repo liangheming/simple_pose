@@ -63,6 +63,21 @@ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.734
 Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.818
 ```
 
+### SELayer+DConv(上采样使用转置卷积)的performance
+**模型初始化时的reduction为True**
+```shell script
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.734
+Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.924
+Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.802
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.706
+Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.774
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.767
+Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.933
+Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.827
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.735
+Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.815
+```
+
 
 ## training
 目前支持coco 关键点数据集.自定义数据集请参考datasets/coco.py中的MSCOCO.__load_in()部分代码.相信这部分代码非常容易改写.
