@@ -91,6 +91,21 @@ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.750
 Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.860
 ```
 
+### SE_DUC+YOLOv5
+```shell script
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.723
+Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.903
+Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.794
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.689
+Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.787
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.780
+Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.940
+Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.845
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.739
+Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.839
+```
+
+
 
 ## training
 目前支持coco 关键点数据集.自定义数据集请参考datasets/coco.py中的MSCOCO.__load_in()部分代码.相信这部分代码非常容易改写.
