@@ -77,7 +77,7 @@ Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.841
 Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.733
 Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.837
 ```
-### HRNet w32(上采样使用转置卷积)的performance
+### HRNet W32 performance
 ```shell script
 Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.741
 Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.895
@@ -91,7 +91,7 @@ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.750
 Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.860
 ```
 
-### SE_DUC+YOLOv5
+### SE_DUC+YOLOv5(目标检测使用重写的YOLOv5)
 ```shell script
 Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.723
 Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.903
@@ -104,6 +104,7 @@ Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.845
 Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.739
 Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.839
 ```
+[目标检测权重以及姿态估计的权重](https://pan.baidu.com/s/1O4u1wOklZOj-OVYivpRX1w) 云盘密码:e5f9
 
 
 
@@ -167,5 +168,6 @@ nohup python main.py >>train.log 2>&1 &
 - [x] SELayer
 - [x] Sync Batch Normalize
 - [x] Person Detector support(by YOLOv5)
-- [ ] Test With Person Detector(YOLOv3...)
+- [x] Test With Person Detector(YOLOv3/v4/v5...)
 - [ ] custom data train\test scripts
+- [ ] video demo\friendly API
