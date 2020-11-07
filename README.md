@@ -24,58 +24,71 @@ keypoints的decode为具体解码器为 GaussTaylorKeyPointDecoder
 
 ### DConv(上采样使用转置卷积)的performance
 ```shell script
-Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.714
-Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.913
-Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.789
-Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.688
-Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.760
-Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.752
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.701
+Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.883
+Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.772
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.665
+Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.772
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.760
 Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.928
-Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.815
-Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.719
-Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.802
+Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.825
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.715
+Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.825
 ```
 ### DUC(上采样Conv+PixelShuffle)的performance)
 ```shell script
-Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.726
-Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.923
-Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.801
-Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.698
-Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.772
-Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.760
-Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.930
-Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.823
-Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.724
-Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.813
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.709
+Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.885
+Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.781
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.674
+Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.781
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.768
+Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.929
+Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.832
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.722
+Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.833
 ```
 ### SELayer+DUC(上采样Conv+PixelShuffle)的performance
 **模型初始化时的reduction为True**
 ```shell script
-Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.734
-Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.923
-Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.810
-Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.706
-Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.777
-Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.768
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.718
+Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.892
+Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.790
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.683
+Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.787
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.775
 Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.932
-Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.831
-Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.734
-Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.818
+Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.841
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.732
+Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.836
 ```
 
 ### SELayer+DConv(上采样使用转置卷积)的performance
 **模型初始化时的reduction为True**
 ```shell script
-Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.734
-Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.924
-Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.802
-Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.706
-Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.774
-Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.767
-Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.933
-Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.827
-Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.735
-Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.815
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.717
+Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.890
+Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.791
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.685
+Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.785
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.776
+Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.934
+Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.841
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.733
+Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.837
+```
+### HRNet w32(上采样使用转置卷积)的performance
+```shell script
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.741
+Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.895
+Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.807
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.703
+Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.814
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.795
+Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.935
+Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.856
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.750
+Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.860
 ```
 
 

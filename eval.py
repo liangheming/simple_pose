@@ -7,6 +7,7 @@ from nets import pose_resnet_duc
 from metrics.pose_metrics import BasicKeyPointDecoder, kps_to_dict_, GaussTaylorKeyPointDecoder
 from datasets.coco import MSCOCO
 from torch.utils.data import DataLoader
+import numpy as np
 
 
 def eval_kps(pd_ann_path="test_gt_kpt.json",
@@ -29,7 +30,7 @@ def eval_kps(pd_ann_path="test_gt_kpt.json",
 @torch.no_grad()
 def predicts_by_gt():
     vdata = MSCOCO(img_root="data/val2017",
-                   ann_path="annotations/person_keypoints_val2017.json",
+                   ann_path="data/annotations/person_keypoints_val2017.json",
                    debug=False,
                    augment=False,
                    )
@@ -98,48 +99,12 @@ def gen_data_by_detector():
 
 
 @torch.no_grad()
-def predicts_by_detector():
-    from datasets.naive_data import NaiveDataset
-    vdata = NaiveDataset(
-        json_path="person_detection_ap_59_02.json",
-    )
-    vloader = DataLoader(dataset=vdata,
-                         batch_size=4,
-                         num_workers=2,
-                         collate_fn=vdata.collate_fn,
-                         shuffle=False
-                         )
-    model: torch.nn.Module = getattr(pose_resnet_duc, "resnet50")(
-        pretrained=False,
-        num_classes=17,
-        reduction=True
-    )
-    weights = torch.load("weights/with_reduction/pose_resnet_duc_best.pth", map_location="cpu")['ema']
-    weights_info = model.load_state_dict(weights, strict=False)
-    print(weights_info)
-    device = torch.device("cuda:8")
-    model.to(device).eval()
-    pbar = tqdm(vloader)
-    kps_dict_list = list()
-    decoder = GaussTaylorKeyPointDecoder()
-    # decoder = BasicKeyPointDecoder()
-    for i, (input_tensors, trans_invs, img_ids) in enumerate(pbar):
-        input_img = input_tensors.to(device)
-        tran_inv = trans_invs.to(device)
-        output = model(input_img)
-        predicts, scores = decoder(output, tran_inv)
-        kps_to_dict_(predicts, scores, img_ids, kps_dict_list)
-        # break
-    with open("test_detector_kpt.json", "w") as wf:
-        json.dump(kps_dict_list, wf)
-    eval_kps(pd_ann_path="test_detector_kpt.json")
-
-
-@torch.no_grad()
 def predicts_by_pred():
     from datasets.naive_data import MSCOCONoGt
+    from nets.pose_hrnet import get_pose_net
+
     vdata = MSCOCONoGt(img_root="data/val2017",
-                       ann_path="data/annotations/person_keypoints_val2017.json",
+                       ann_path="data/annotations/COCO_val2017_detections_AP_H_56_person.json",
                        )
     vloader = DataLoader(dataset=vdata,
                          batch_size=4,
@@ -147,66 +112,151 @@ def predicts_by_pred():
                          collate_fn=vdata.collate_fn,
                          shuffle=False
                          )
-    model: torch.nn.Module = getattr(pose_resnet_dconv, "resnet50")(
-        pretrained=False,
-        num_classes=17,
-        reduction=False
+    model: torch.nn.Module = get_pose_net(
+        cfg_path="nets/hrnet_w32.yaml",
+        joint_num=17
     )
-    weights = torch.load("weights/without_reduction/fast_pose_dp_dconv_best.pth", map_location="cpu")['ema']
+    # model: torch.nn.Module = getattr(pose_resnet_dconv, "resnet50")(
+    #     pretrained=False,
+    #     num_classes=17,
+    #     reduction=False
+    # )
+    weights = torch.load("weights/hrnet_pose_dp_best.pth", map_location="cpu")['ema']
     weights_info = model.load_state_dict(weights, strict=False)
     print(weights_info)
     device = torch.device("cuda:8")
     model.to(device).eval()
     pbar = tqdm(vloader)
-    kps_dict_list = list()
+    kps_predicts = list()
     decoder = GaussTaylorKeyPointDecoder()
     # decoder = BasicKeyPointDecoder()
-    for i, (input_tensors, trans_invs, img_ids) in enumerate(pbar):
+    for i, (input_tensors, trans_invs, box_info) in enumerate(pbar):
         input_img = input_tensors.to(device)
         tran_inv = trans_invs.to(device)
         output = model(input_img)
         predicts, scores = decoder(output, tran_inv)
-        kps_to_dict_(predicts, scores, img_ids, kps_dict_list)
-        # break
-    with open("test_pred_kpt.json", "w") as wf:
-        json.dump(kps_dict_list, wf)
-    eval_kps(pd_ann_path="test_pred_kpt.json")
+        kps_pred = torch.cat([predicts, scores], dim=-1).cpu().numpy()
+        for kp, info in zip(kps_pred, box_info):
+            kp_list = kp.reshape(-1).tolist()
+            item = {
+                "kps": kp_list,
+                "area": float(info.area),
+                "score": info.score,
+                "img_id": info.ids
+            }
+            kps_predicts.append(item)
+    with open("predicts_kps_temp.json", "w") as wf:
+        json.dump(kps_predicts, wf)
+    temp_read_in_and_filter()
+
+
+def temp_read_in_and_filter(in_vis_thre=0.2, oks_thre=0.9):
+    from collections import defaultdict
+    from datasets.naive_data import oks_nms
+    with open("predicts_kps_temp.json", "r") as rf:
+        json_data = json.load(rf)
+    kpts = defaultdict(list)
+
+    filter_list = list()
+    for kpt in json_data:
+        kpts[kpt['img_id']].append(kpt)
+    for img_id in kpts.keys():
+        img_kpts = kpts[img_id]
+        score_list = list()
+        area_list = list()
+        kpts_list = list()
+        for n_p in img_kpts:
+            box_score = n_p['score']
+            kpt_item = np.array(n_p['kps']).reshape(-1, 3)
+            kpt_scores = kpt_item[:, -1]
+            valid_mask = kpt_scores > in_vis_thre
+            kpt_score = kpt_scores[valid_mask].mean() if valid_mask.sum() > 0 else 0.
+            score = box_score * kpt_score
+            area = n_p['area']
+            score_list.append(score)
+            area_list.append(area)
+            kpts_list.append(kpt_item)
+        kpts_list = np.stack(kpts_list, axis=0)
+        score_list = np.array(score_list)
+        area_list = np.array(area_list)
+        keep = oks_nms(kpts_list, score_list, area_list, oks_thre)
+        if len(keep) != 0:
+            kpts_list = kpts_list[keep]
+            score_list = score_list[keep]
+        for kpt_filer, kpt_score in zip(kpts_list, score_list):
+            filter_list.append(
+                {
+                    "image_id": img_id,
+                    "score": kpt_score,
+                    "category_id": 1,
+                    "keypoints": kpt_filer.reshape(-1).tolist()
+                }
+            )
+    with open("filter_kps_predicts.json", 'w') as wf:
+        json.dump(filter_list, wf)
+    eval_kps(pd_ann_path="filter_kps_predicts.json")
 
 
 if __name__ == '__main__':
     predicts_by_pred()
-# SE+DUC
-# Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.734
-# Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.923
-# Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.810
-# Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.706
-# Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.777
-# Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.768
-# Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.932
-# Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.831
-# Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.734
-# Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.818
 
-# DUC+GaussTaylor
-# Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.726
-# Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.923
-# Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.801
-# Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.698
-# Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.772
-# Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.760
-# Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.930
-# Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.823
-# Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.724
-# Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.813
+# DUC
+# Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.709
+# Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.885
+# Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.781
+# Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.674
+# Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.781
+# Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.768
+# Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.929
+# Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.832
+# Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.722
+# Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.833
+
+# SE+DUC
+# Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.718
+# Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.892
+# Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.790
+# Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.683
+# Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.787
+# Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.775
+# Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.932
+# Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.841
+# Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.732
+# Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.836
+
 
 # DCONV
-# Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.714
-# Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.913
-# Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.789
-# Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.688
-# Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.760
-# Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.752
+# Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.701
+# Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.883
+# Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.772
+# Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.665
+# Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.772
+# Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.760
 # Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.928
-# Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.815
-# Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.719
-# Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.802
+# Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.825
+# Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.715
+# Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.825
+
+# SE+DCONV
+# Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.717
+# Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.890
+# Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.791
+# Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.685
+# Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.785
+# Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.776
+# Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.934
+# Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.841
+# Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.733
+# Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.837
+
+# HRNet
+# Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.741
+# Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.895
+# Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.807
+# Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.703
+# Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.814
+# Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.795
+# Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.935
+# Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.856
+# Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.750
+# Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.860
